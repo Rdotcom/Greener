@@ -13,25 +13,27 @@ export const spacing = {
   xxl: 48,
 } as const;
 
+// Harder edges make the app feel like a physical municipal sorting label,
+// rather than another rounded AI chat/dashboard template.
 export const radius = {
-  sm: 8,
-  md: 14,
-  lg: 22,
+  sm: 4,
+  md: 8,
+  lg: 12,
   pill: 999,
 } as const;
 
 export const typography = {
   display: {
     fontFamily: "Atkinson_700Bold",
-    fontSize: 34,
-    lineHeight: 38,
-    letterSpacing: -0.8,
+    fontSize: 36,
+    lineHeight: 39,
+    letterSpacing: -1.2,
   },
   title: {
     fontFamily: "Atkinson_700Bold",
     fontSize: 28,
     lineHeight: 34,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   heading: {
     fontFamily: "Atkinson_600SemiBold",
