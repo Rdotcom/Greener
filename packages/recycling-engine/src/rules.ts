@@ -25,6 +25,18 @@ export const PALPA_RULE: SortingRuleReference = {
   verificationStatus: "verified",
 };
 
+export const HAZARDOUS_WASTE_RULE: SortingRuleReference = {
+  id: "fi.hsy.hazardous-waste",
+  version: "fi-hsy-2026-09-18.1",
+  jurisdiction: "FI",
+  sourceName: "Helsingin seudun ympäristöpalvelut (HSY)",
+  sourceUrl:
+    "https://www.hsy.fi/jatteet-ja-kierratys/jateopas-ja-lajitteluohjeet/lajittelu/vaarallinen-jate/",
+  checkedAt: "2026-09-18",
+  effectiveFrom: "2026-09-18",
+  verificationStatus: "verified",
+};
+
 const hazardousException: LocalizedText = {
   fi: "Jos pakkauksessa on vaarallisen aineen jäämiä tai painetta, vie se paikalliseen vaarallisen jätteen vastaanottoon.",
   en: "If the package contains hazardous residue or pressure, take it to the local hazardous-waste reception point.",
@@ -62,10 +74,7 @@ export const MATERIAL_RULES: readonly MaterialRule[] = [
     materials: ["carton", "paper"],
     destination: "carton_packaging",
     label: { fi: "Kartonkipakkausten keräys", en: "Carton packaging collection" },
-    preparation: {
-      fi: "Tyhjennä ja litistä pakkaus.",
-      en: "Empty and flatten the package.",
-    },
+    preparation: { fi: "Tyhjennä ja litistä pakkaus.", en: "Empty and flatten the package." },
     explanation: {
       fi: "Tämä on kotitalouden kartonki- tai paperipakkaus, joten siihen sovelletaan valtakunnallista pakkauskeräyksen ohjetta.",
       en: "This is household carton or paper packaging, so the nationwide packaging-collection rule applies.",
