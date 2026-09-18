@@ -32,11 +32,18 @@ export function SortingResultCard({
   if (result.status === "resolved") {
     return (
       <Paper style={embedded && styles.embedded} testID="sorting-result-resolved">
-        <View style={styles.destination}>
-          <AppText variant="small" muted>
-            {t("destinationLabel")}
+        <View
+          style={[
+            styles.destinationHighlight,
+            { backgroundColor: palette.pineSoft, borderColor: palette.pine },
+          ]}
+          testID="sorting-destination-highlight"
+          accessibilityRole="summary"
+        >
+          <AppText variant="small" style={{ color: palette.pine }}>
+            {t("destinationLabel").toUpperCase()}
           </AppText>
-          <AppText variant="heading" accessibilityRole="header">
+          <AppText variant="title" accessibilityRole="header" style={{ color: palette.pine }}>
             {localizedText(language, result.destination.label)}
           </AppText>
         </View>
@@ -162,12 +169,10 @@ function RuleReferences({ sources }: { readonly sources: readonly SortingRuleRef
             onPress={() => void Linking.openURL(source.sourceUrl)}
           />
           <AppText variant="small" muted>
-            {t("ruleJurisdictionLabel")}: {source.jurisdiction} · {t("checkedLabel")}:{" "}
-            {source.checkedAt}
+            {t("ruleJurisdictionLabel")}: {source.jurisdiction} · {t("checkedLabel")}: {source.checkedAt}
           </AppText>
           <AppText variant="small" muted>
-            {t("ruleVersionLabel")}: {source.version} · {t("ruleVerificationLabel")}:{" "}
-            {t("verificationVerified")}
+            {t("ruleVersionLabel")}: {source.version} · {t("ruleVerificationLabel")}: {t("verificationVerified")}
           </AppText>
         </View>
       ))}
@@ -185,7 +190,12 @@ function GuidanceBlock({ label, body }: { readonly label: string; readonly body:
 }
 
 const styles = StyleSheet.create({
-  destination: { gap: spacing.xxs },
+  destinationHighlight: {
+    gap: spacing.xs,
+    borderWidth: 2,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
   embedded: {
     borderWidth: 0,
     padding: 0,
