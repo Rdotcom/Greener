@@ -4,7 +4,7 @@ import type {
   MaterialFamily,
   PackagingShape,
 } from "@kierratysappi/domain";
-import { localizedText } from "@kierratysappi/localization";
+import { localizedText, type MessageKey } from "@kierratysappi/localization";
 import { sortPackagingComponent, type SortingResult } from "@kierratysappi/recycling-engine";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -41,17 +41,29 @@ const DEPOSITS = [
   ["unknown", "answerUnknown"],
 ] as const;
 
+type MaterialChoice = (typeof MATERIALS)[number][0];
+
 export default function ManualComponentScreen() {
   const router = useRouter();
   const { palette } = useAppTheme();
   const { language, t } = useLanguage();
-  const [material, setMaterial] = useState<MaterialFamily>();
+  const [materials, setMaterials] = useState<MaterialFamily[]>([]);
   const [shape, setShape] = useState<PackagingShape>("unknown");
   const [deposit, setDeposit] = useState<DepositReturnStatus>("unknown");
-  const [result, setResult] = useState<SortingResult>();
+  const [results, setResults] = useState<SortingResult[]>([]);
+
+  const toggleMaterial = (value: string) => {
+    const material = value as MaterialChoice;
+    setMaterials((current) =>
+      current.includes(material)
+        ? current.filter((item) => item !== material)
+        : [...current, material],
+    );
+    setResults([]);
+  };
 
   const evaluate = () => {
-    if (!material) return;
+    if (materials.length === 0) return;
     const now = new Date().toISOString();
     const provenance: FieldProvenance = {
       sourceId: "local-user-observation",
@@ -70,27 +82,34 @@ export default function ManualComponentScreen() {
       },
     };
     const observed = <T,>(value: T) => ({ value, provenance });
-    const nextResult = sortPackagingComponent({
-      component: {
-        id: "local-component",
-        packagingStatus: observed("packaging"),
-        materialFamily: observed(material),
-        shape: observed(shape),
-        depositReturnStatus: observed(
-          shape === "bottle" || shape === "can" ? deposit : "not_applicable",
-        ),
-        conditions: { hazardousResidue: "unknown", pressurized: "unknown", emptied: "unknown" },
-      },
-      context: { country: "FI", language, evaluatedAt: now },
-    });
-    setResult(nextResult);
+    const componentShape = materials.length === 1 ? shape : "unknown";
+    const componentDeposit =
+      materials.length === 1 && (shape === "bottle" || shape === "can")
+        ? deposit
+        : "not_applicable";
+    const nextResults = materials.map((material, index) =>
+      sortPackagingComponent({
+        component: {
+          id: `local-component-${index + 1}`,
+          packagingStatus: observed("packaging"),
+          materialFamily: observed(material),
+          shape: observed(componentShape),
+          depositReturnStatus: observed(componentDeposit),
+          conditions: { hazardousResidue: "unknown", pressurized: "unknown", emptied: "unknown" },
+        },
+        context: { country: "FI", language, evaluatedAt: now },
+      }),
+    );
+    setResults(nextResults);
     announceAccessibility(
-      nextResult.status === "resolved"
-        ? localizedText(language, nextResult.destination.label)
-        : nextResult.status === "ambiguous"
-          ? localizedText(language, nextResult.question)
-          : localizedText(language, nextResult.nextAction),
-      nextResult.status === "resolved" ? "default" : "high",
+      nextResults.length > 1
+        ? `${nextResults.length} ${t("packagingParts")}`
+        : nextResults[0]?.status === "resolved"
+          ? localizedText(language, nextResults[0].destination.label)
+          : nextResults[0]?.status === "ambiguous"
+            ? localizedText(language, nextResults[0].question)
+            : localizedText(language, nextResults[0]?.nextAction ?? t("confidenceUnknown")),
+      nextResults.length === 1 && nextResults[0]?.status === "resolved" ? "default" : "high",
     );
   };
 
@@ -110,12 +129,10 @@ export default function ManualComponentScreen() {
 
       <ChoiceGroup
         label={t("selectMaterialTitle")}
-        value={material}
+        value={materials}
+        multiple
         choices={MATERIALS.map(([value, label]) => ({ value, label: t(label) }))}
-        onChange={(value) => {
-          setMaterial(value as MaterialFamily);
-          setResult(undefined);
-        }}
+        onChange={toggleMaterial}
       />
       <ChoiceGroup
         label={t("shapeLabel")}
@@ -123,24 +140,31 @@ export default function ManualComponentScreen() {
         choices={SHAPES.map(([value, label]) => ({ value, label: t(label) }))}
         onChange={(value) => {
           setShape(value as PackagingShape);
-          setResult(undefined);
+          setResults([]);
         }}
       />
-      {(shape === "bottle" || shape === "can") && (
+      {materials.length === 1 && (shape === "bottle" || shape === "can") && (
         <ChoiceGroup
           label={t("depositLabel")}
           value={deposit}
           choices={DEPOSITS.map(([value, label]) => ({ value, label: t(label) }))}
           onChange={(value) => {
             setDeposit(value as DepositReturnStatus);
-            setResult(undefined);
+            setResults([]);
           }}
         />
       )}
-      <Button label={t("showGuidance")} onPress={evaluate} disabled={!material} />
-      {result && (
+      <Button label={t("showGuidance")} onPress={evaluate} disabled={materials.length === 0} />
+      {results.length > 0 && (
         <View style={styles.result} accessibilityLiveRegion="polite">
-          <SortingResultCard result={result} />
+          {results.map((result, index) => (
+            <View key={result.componentId} style={styles.resultItem}>
+              <AppText variant="label">
+                {index + 1} / {results.length} · {materialLabel(materials[index], t)}
+              </AppText>
+              <SortingResultCard result={result} />
+            </View>
+          ))}
         </View>
       )}
       <AppText variant="small" muted style={{ color: palette.muted }}>
@@ -150,16 +174,26 @@ export default function ManualComponentScreen() {
   );
 }
 
+function materialLabel(value: MaterialFamily | undefined, t: (key: MessageKey) => string): string {
+  if (value === "plastic") return t("materialPlastic");
+  if (value === "carton") return t("materialCarton");
+  if (value === "glass") return t("materialGlass");
+  if (value === "metal") return t("materialMetal");
+  return t("materialUnknown");
+}
+
 function ChoiceGroup({
   label,
   value,
   choices,
   onChange,
+  multiple = false,
 }: {
   readonly label: string;
-  readonly value: string | undefined;
+  readonly value: string | readonly string[] | undefined;
   readonly choices: readonly { readonly value: string; readonly label: string }[];
   readonly onChange: (value: string) => void;
+  readonly multiple?: boolean;
 }) {
   const { palette } = useAppTheme();
   return (
@@ -167,11 +201,13 @@ function ChoiceGroup({
       <AppText variant="label">{label}</AppText>
       <View style={styles.choices}>
         {choices.map((choice) => {
-          const selected = value === choice.value;
+          const selected = multiple
+            ? Array.isArray(value) && value.includes(choice.value)
+            : value === choice.value;
           return (
             <Pressable
               key={choice.value}
-              accessibilityRole="radio"
+              accessibilityRole={multiple ? "checkbox" : "radio"}
               accessibilityState={{ checked: selected }}
               aria-checked={selected}
               onPress={() => onChange(choice.value)}
@@ -212,5 +248,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     justifyContent: "center",
   },
-  result: { paddingTop: spacing.lg },
+  result: { paddingTop: spacing.lg, gap: spacing.lg },
+  resultItem: { gap: spacing.xs },
 });
