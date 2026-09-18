@@ -1,7 +1,7 @@
 import type { MessageKey } from "@kierratysappi/localization";
 import type { DestinationId, SortingResult } from "@kierratysappi/recycling-engine";
 
-type UnknownReason = Extract<SortingResult, { status: "unknown" }>["reason"];
+type UnknownReason = Extract<SortingResult, { status: "unknown" }>['reason'];
 
 const destinationKeys = {
   deposit_return: "destinationDepositReturn",
@@ -9,6 +9,7 @@ const destinationKeys = {
   carton_packaging: "destinationCartonPackaging",
   glass_packaging: "destinationGlassPackaging",
   metal_collection: "destinationMetalCollection",
+  hazardous_waste: "unknownReasonHazardousOrPressurized",
 } as const satisfies Record<DestinationId, MessageKey>;
 
 const unknownReasonKeys = {
