@@ -12,6 +12,7 @@ export const DestinationIdSchema = z.enum([
   "carton_packaging",
   "glass_packaging",
   "metal_collection",
+  "hazardous_waste",
 ]);
 export type DestinationId = z.infer<typeof DestinationIdSchema>;
 
